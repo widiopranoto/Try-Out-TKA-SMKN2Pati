@@ -1,0 +1,202 @@
+[
+    {
+        "id": 1,
+        "text": "Jika $2x + 5 = 15$, berapakah nilai dari $4x$?",
+        "options": ["A. 10", "B. 20", "C. 30", "D. 40"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 2,
+        "text": "Tentukan himpunan penyelesaian dari pertidaksamaan $|3x - 1| \\le 5$.",
+        "options": ["A. $-2/3 \\le x \\le 2$", "B. $-2 \\le x \\le 2/3$", "C. $x \\ge 2$ atau $x \\le -2/3$", "D. $-2 \\le x \\le 2$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 3,
+        "text": "Jika matriks $A = \\begin{pmatrix} 2 & 1 \\\\ -1 & 3 \\end{pmatrix}$, tentukan invers matriks $A^{-1}$.",
+        "options": ["A. $\\frac{1}{7}\\begin{pmatrix} 3 & -1 \\\\ 1 & 2 \\end{pmatrix}$", "B. $\\frac{1}{7}\\begin{pmatrix} 2 & 1 \\\\ -1 & 3 \\end{pmatrix}$", "C. $\\frac{1}{5}\\begin{pmatrix} 3 & -1 \\\\ 1 & 2 \\end{pmatrix}$", "D. $\\frac{1}{5}\\begin{pmatrix} 2 & 1 \\\\ -1 & 3 \\end{pmatrix}$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 4,
+        "text": "Diketahui suku ke-3 dan suku ke-7 barisan aritmatika berturut-turut adalah 10 dan 22. Tentukan suku ke-10 barisan tersebut.",
+        "options": ["A. 28", "B. 31", "C. 34", "D. 37"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 5,
+        "text": "Nilai dari $\\lim_{x \\to 0} \\frac{\\sin(4x)}{2x}$ adalah...",
+        "options": ["A. 1/2", "B. 1", "C. 2", "D. 4"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 6,
+        "text": "Pilihlah semua bilangan yang habis dibagi 3 dari daftar berikut.",
+        "options": ["A. 123", "B. 451", "C. 990", "D. 505"],
+        "type": "checkbox",
+        "image": "",
+        "answer": []
+    },
+    {
+        "id": 7,
+        "text": "Diketahui fungsi $f(x) = x^2 - 3x + 2$. Tentukan nilai turunan $f'(4)$.",
+        "options": ["A. 5", "B. 6", "C. 7", "D. 8"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 8,
+        "text": "Jika jari-jari sebuah lingkaran adalah 7 cm, berapakah luas lingkaran tersebut? ($\\pi \\approx 22/7$)",
+        "options": ["A. $49 \\text{ cm}^2$", "B. $154 \\text{ cm}^2$", "C. $77 \\text{ cm}^2$", "D. $22 \\text{ cm}^2$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 9,
+        "text": "Tentukan persamaan garis lurus yang melalui titik $(1, 3)$ dan bergradien $m=2$.",
+        "options": ["A. $y = 2x + 1$", "B. $y = 2x - 1$", "C. $y = x + 2$", "D. $y = -2x + 5$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 10,
+        "text": "Berapakah hasil dari $\\int (3x^2 - 4x + 1) dx$?",
+        "options": ["A. $x^3 - 2x^2 + x + C$", "B. $6x - 4 + C$", "C. $x^3 - 4x^2 + x + C$", "D. $3x^3 - 4x^2 + x + C$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 11,
+        "text": "Tentukan nilai dari $\\log_2 8 + \\log_3 9$.",
+        "options": ["A. 3", "B. 4", "C. 5", "D. 6"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 12,
+        "text": "Sebuah dadu dilempar sekali. Berapakah peluang munculnya mata dadu bilangan genap?",
+        "options": ["A. $1/6$", "B. $1/3$", "C. $1/2$", "D. $2/3$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 13,
+        "text": "Perhatikan segitiga siku-siku dengan panjang sisi tegak 3 cm dan 4 cm. Berapakah panjang sisi miringnya?",
+        "options": ["A. $5 \\text{ cm}$", "B. $6 \\text{ cm}$", "C. $7 \\text{ cm}$", "D. $8 \\text{ cm}$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 14,
+        "text": "Jika $\\sin A = 3/5$ dan A di kuadran I, berapakah nilai dari $\\cos A$?",
+        "options": ["A. $3/5$", "B. $4/5$", "C. $5/3$", "D. $5/4$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 15,
+        "text": "Berapakah hasil perkalian skalar dari vektor $\\mathbf{u} = (2, -1)$ dan $\\mathbf{v} = (3, 4)$?",
+        "options": ["A. $(6, -4)$", "B. 2", "C. 6", "D. 10"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 16,
+        "text": "Jumlah deret geometri tak hingga $4 + 2 + 1 + 1/2 + \\dots$ adalah...",
+        "options": ["A. 6", "B. 7", "C. 8", "D. $\\infty$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 17,
+        "text": "Tentukan nilai $x$ dari persamaan eksponensial $2^{x+1} = 16$.",
+        "options": ["A. 2", "B. 3", "C. 4", "D. 5"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 18,
+        "text": "Jika $f(x) = x^2$ dan $g(x) = x - 1$, tentukan fungsi komposisi $(f \\circ g)(x)$.",
+        "options": ["A. $x^2 - 1$", "B. $(x - 1)^2$", "C. $x^2 - 2x + 1$", "D. $x^2 - x$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 19,
+        "text": "Pilihlah semua bentuk persamaan kuadrat.",
+        "options": ["A. $2x^2 + 5x - 3 = 0$", "B. $y = 3x - 1$", "C. $x^3 - 8 = 0$", "D. $x(x+1) = 0$"],
+        "type": "checkbox",
+        "image": "",
+        "answer": []
+    },
+    {
+        "id": 20,
+        "text": "Tentukan median dari data: 4, 5, 8, 4, 6, 7, 7.",
+        "options": ["A. 4", "B. 5", "C. 6", "D. 7"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 21,
+        "text": "Diketahui $\\cos 60^{\\circ} = 1/2$. Tentukan nilai dari $2 \\sin 30^{\\circ} \\tan 45^{\\circ}$.",
+        "options": ["A. 1/2", "B. 1", "C. $\\sqrt{2}$", "D. 2"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 22,
+        "text": "Berapakah volume kubus jika panjang sisinya adalah 5 cm?",
+        "options": ["A. $25 \\text{ cm}^3$", "B. $125 \\text{ cm}^3$", "C. $50 \\text{ cm}^3$", "D. $100 \\text{ cm}^3$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 23,
+        "text": "Tentukan solusi dari sistem persamaan linear $x + y = 5$ dan $2x - y = 4$.",
+        "options": ["A. $x=3, y=2$", "B. $x=2, y=3$", "C. $x=4, y=1$", "D. $x=1, y=4$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 24,
+        "text": "Jika sebuah parabola memiliki persamaan $y = x^2 - 4x + 3$, tentukan koordinat titik puncaknya.",
+        "options": ["A. $(2, -1)$", "B. $(-2, -1)$", "C. $(1, -2)$", "D. $(-1, 2)$"],
+        "type": "radio",
+        "image": "",
+        "answer": ""
+    },
+    {
+        "id": 25,
+        "text": "Perhatikan diagram batang di samping. Jika sumbu Y menunjukkan frekuensi dan batang 'Nilai 80' memiliki tinggi 15. Berapakah frekuensi total jika hanya ada batang Nilai 70 (tinggi 10) dan Nilai 90 (tinggi 5)?",
+        "options": ["A. 25", "B. 30", "C. 35", "D. 40"],
+        "type": "radio",
+        "image": "images/diagram_batang_dummy.png", 
+        "answer": ""
+    }
+]

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMK N 2 Pati - Data Peserta</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .header { background-color: #004d40; color: white; padding: 15px; text-align: center; }
+        .card { background-color: white; margin: 30px auto; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); max-width: 500px; }
+        .card h2 { color: #004d40; margin-top: 0; }
+        .data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .data-label { font-weight: bold; }
+        input[type="text"], button { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #00796b; color: white; cursor: pointer; margin-top: 20px; font-weight: bold; }
+        button:hover { background-color: #00695c; }
+        .error { color: red; margin-top: 10px; text-align: center; }
+        .success { color: green; margin-top: 10px; text-align: center; }
+        #loading { text-align: center; color: #004d40; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>SMK Negeri 2 Pati</h1>
+    <h2>Try Out TKA</h2>
+</div>
+
+<div class="card">
+    <h2>Data Peserta</h2>
+
+    <div id="loading">Memuat data peserta...</div>
+    <div id="dataContent" style="display:none;">
+        <div class="data-row">
+            <span class="data-label">Kode NISN:</span>
+            <span id="nisnDisplay"></span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Nama Peserta:</span>
+            <span id="namaDisplay"></span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Tanggal Lahir:</span>
+            <span id="tglLahirDisplay"></span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Jenis Kelamin:</span>
+            <span id="jkDisplay"></span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Mata Ujian:</span>
+            <span id="mapelDisplay"></span>
+        </div>
+        
+        <form id="tokenForm">
+            <label for="token">Token Ujian:</label>
+            <input type="text" id="token" placeholder="Masukkan Token Ujian" required>
+            <div id="alertMessage" class="error" style="display:none;"></div>
+            <button type="submit">Submit dan Lanjut Konfirmasi</button>
+            <button type="button" onclick="goBack()" style="background-color: #ccc; color: black; margin-top: 10px;">Kembali</button>
+        </form>
+    </div>
+    
+    <div id="nisnNotFound" class="error" style="display:none; padding: 20px;">
+        ⚠️ **NISN tidak ditemukan!** Harap periksa NISN yang Anda masukkan dan kembali ke halaman sebelumnya.
+        <button type="button" onclick="goBack()" style="background-color: #d32f2f; color: white;">Kembali ke Halaman Awal</button>
+    </div>
+</div>
+
+<script>
+    // URL Google Apps Script Anda telah dimasukkan
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwbj0boWqol7wuhSqqztkrRBp9a8wowkza8mVnzCKmNxqXw_eNu1qbiD_OOXNps-LjgKg/exec'; 
+    const EXPECTED_TOKEN = 'SAYABISA';
+    
+    const nisn = localStorage.getItem('nisn');
+    const mapelCode = localStorage.getItem('mapel');
+
+    const mapelNames = {
+        'bindo': 'Bahasa Indonesia',
+        'mat': 'Matematika',
+        'bing': 'Bahasa Inggris',
+        'pkku': 'PKKU',
+        'jepang': 'Bahasa Jepang'
+    };
+
+    async function fetchData(nisn) {
+        const url = `${GAS_API_URL}?nisn=${encodeURIComponent(nisn)}`;
+        try {
+            const response = await fetch(url, { method: 'GET', mode: 'cors' });
+            if (!response.ok) {
+                 throw new Error(`Server GAS merespons dengan status: ${response.status}`);
+            }
+            const result = await response.json();
+            return result; 
+        } catch (error) {
+            console.error('Error fetching data from GAS:', error);
+            return { found: false, error: 'Koneksi ke server gagal.' };
+        }
+    }
+
+    function goBack() {
+        window.location.href = 'index.html';
+    }
+
+    async function loadData() {
+        if (!nisn || !mapelCode) {
+            goBack();
+            return;
+        }
+
+        const mapelName = mapelNames[mapelCode] || 'Tidak Diketahui';
+        document.getElementById('mapelDisplay').textContent = mapelName;
+        document.getElementById('nisnDisplay').textContent = nisn;
+
+        const result = await fetchData(nisn);
+
+        document.getElementById('loading').style.display = 'none';
+
+        if (result.found) {
+            const data = result; 
+            
+            // Simpan data yang dicocokkan ke Local Storage
+            localStorage.setItem('nama', data.name);
+            localStorage.setItem('tgl_lahir', data.tgl_lahir);
+            localStorage.setItem('jk', data.jk);
+
+            // Tampilkan data di card
+            document.getElementById('namaDisplay').textContent = data.name;
+            document.getElementById('tglLahirDisplay').textContent = data.tgl_lahir;
+            document.getElementById('jkDisplay').textContent = data.jk;
+            document.getElementById('dataContent').style.display = 'block';
+
+        } else {
+            document.getElementById('nisnNotFound').style.display = 'block';
+        }
+    }
+
+    document.getElementById('tokenForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const tokenInput = document.getElementById('token').value.trim();
+        const alertMessage = document.getElementById('alertMessage');
+
+        if (tokenInput.toUpperCase() === EXPECTED_TOKEN) {
+            alertMessage.classList.remove('error');
+            alertMessage.classList.add('success');
+            alertMessage.textContent = 'Token Benar! Melanjutkan ke konfirmasi...';
+            alertMessage.style.display = 'block';
+            
+            // PENGALIHAN KE HALAMAN KONFIRMASI
+            setTimeout(() => {
+                window.location.href = 'confirm.html'; 
+            }, 500);
+
+        } else {
+            alertMessage.classList.remove('success');
+            alertMessage.classList.add('error');
+            alertMessage.textContent = 'Token Salah! Harap masukkan token yang benar.';
+            alertMessage.style.display = 'block';
+        }
+    });
+
+    loadData();
+</script>
+
+</body>
+</html>

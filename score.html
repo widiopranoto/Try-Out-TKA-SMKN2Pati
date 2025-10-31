@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Penilaian Ujian</title>
+    <style>
+        /* CSS Styling */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .header { background-color: #004d40; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 1.5em; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        h2 { color: #004d40; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
+        .user-info p { margin: 5px 0; }
+        .result-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .result-table th, .result-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.9em; }
+        .result-table th { background-color: #f0f0f0; text-align: center; }
+        .result-table td:nth-child(1) { text-align: center; width: 5%; }
+        .result-table td:nth-child(4) { text-align: center; font-weight: bold; }
+        .result-table td:nth-child(2), .result-table td:nth-child(3) { word-break: break-all; }
+        .correct-answer { background-color: #e8f5e9; } 
+        .incorrect-answer { background-color: #ffebee; } 
+        .partial-answer { background-color: #fffde7; } 
+        .score-row td { font-weight: bold; background-color: #e8f5e9; font-size: 1.1em; }
+        .score-display { font-size: 1.5em; color: #d32f2f; font-weight: bold; text-align: center; }
+        .actions { text-align: center; margin-top: 30px; }
+        .btn-exit { background-color: #d32f2f; color: white; padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
+        .btn-exit:hover { background-color: #b71c1c; }
+    </style>
+
+    <script>
+        // --- 1. KONFIGURASI VARIABEL GLOBAL ---
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzrPAXARYVs7OiiagAYeL3DQfFOs7ZouLs-gv_1WADt9uoRPOoVvznWFn78HJKIAvbSAg/exec'; 
+        const mapelCode = localStorage.getItem('mapel');
+        const nisn = localStorage.getItem('nisn');
+        const nama = localStorage.getItem('nama');
+
+        const LS_KEY_ANSWERS = `${mapelCode}_jawaban`;
+        const LS_KEY_KEYS = `${mapelCode}_kunci`;
+        const LS_KEY_QUESTIONS = `${mapelCode}_questions`; // Kunci untuk membaca TIPE soal
+
+        const mapelNames = {
+            'bindo': 'Bahasa Indonesia', 'mat': 'Matematika', 'bing': 'Bahasa Inggris',
+            'pkku': 'PKKU', 'jepang': 'Bahasa Jepang'
+        };
+        const mapelName = mapelNames[mapelCode] || 'Ujian TKA';
+
+        // --- 2. FUNGSI UTILITY & PENILAIAN ---
+
+        function parseKey(key) {
+            if (Array.isArray(key)) return key.map(s => String(s).trim().toUpperCase());
+            if (typeof key === 'string') return key.split(/,\s*|;\s*/).map(s => String(s).trim().toUpperCase()).filter(s => s);
+            return [];
+        }
+
+        /**
+         * Mengurai jawaban peserta. TIDAK MENGHAPUS duplikat agar PG KATEGORI tetap utuh.
+         */
+        function parseAnswer(answer) {
+            let answersArray = [];
+            
+            // TIPE 1: Data disimpan sebagai objek (PGKATEGORI)
+            if (typeof answer === 'object' && answer !== null && !Array.isArray(answer)) {
+                const sortedKeys = Object.keys(answer).sort((a, b) => parseInt(a) - parseInt(b));
+                answersArray = sortedKeys.map(key => String(answer[key]).trim().split('.')[0].toUpperCase()).filter(s => s);
+            } 
+            // TIPE 2: Data disimpan sebagai array atau string (PGMCMA atau PG SEDERHANA)
+            else if (Array.isArray(answer)) {
+                answersArray = answer.map(opt => String(opt).trim().split('.')[0].toUpperCase()).filter(s => s);
+            } else if (typeof answer === 'string') {
+                const parts = answer.trim().split('.');
+                answersArray = [parts.length > 1 ? parts[0].toUpperCase() : answer.toUpperCase()];
+            } else {
+                return [];
+            }
+            
+            return answersArray; 
+        }
+        
+        /**
+         * Menghitung skor berdasarkan TIPE soal yang diterima.
+         * Tipe soal dikonversi ke PGSEDERHANA/PGMCMA/PGKATEGORI sebelum penilaian.
+         */
+        function calculateScore(userAnsRaw, keyRaw, qType) {
+            const correctKey = parseKey(keyRaw);
+            let userAnswers = parseAnswer(userAnsRaw); 
+
+            // Normalisasi dan penentuan tipe utama yang akan ditampilkan
+            const rawType = qType.toUpperCase().trim().replace(/ /g, '');
+            let displayType = 'PG SEDERHANA'; // Default
+            let processingType = 'PGSEDERHANA';
+            
+            if (rawType.includes('KATEGORI')) {
+                processingType = 'PGKATEGORI';
+                displayType = 'PG KATEGORI';
+            } else if (rawType === 'PGMCMA' || rawType === 'CHECKBOX') {
+                processingType = 'PGMCMA';
+                displayType = 'PG MCMA';
+            }
+            
+            if (correctKey.length === 0) return { scoreFraction: '0/0', scorePercentage: 0, isFullScore: false, actualScore: 0, qType: displayType };
+            
+            const totalItems = correctKey.length > 0 ? correctKey.length : 1; 
+
+            // ----------------------------------------------------
+            // 1. Penilaian PG SEDERHANA
+            // ----------------------------------------------------
+            if (processingType === 'PGSEDERHANA') {
+                const isCorrect = userAnswers.length === 1 && correctKey.length === 1 && userAnswers[0] === correctKey[0];
+                return { 
+                    scoreFraction: isCorrect ? '1/1' : '0/1', 
+                    scorePercentage: isCorrect ? 100 : 0,
+                    isFullScore: isCorrect,
+                    actualScore: isCorrect ? 1 : 0,
+                    qType: displayType
+                };
+            } 
+            
+            // ----------------------------------------------------
+            // 2. Penilaian PG KATEGORI (Perbandingan Per-Indeks)
+            // ----------------------------------------------------
+            if (processingType === 'PGKATEGORI') {
+                let correctItems = 0;
+                
+                // Bandingkan setiap item jawaban siswa dengan kunci pada indeks yang sama
+                for (let i = 0; i < totalItems; i++) {
+                    const userAns = userAnswers[i] || "";
+                    const correctAns = correctKey[i] || "";
+                    
+                    if (userAns === correctAns) {
+                        correctItems++;
+                    }
+                }
+
+                const isFullScore = correctItems === totalItems;
+                const scorePercentage = Math.round((correctItems / totalItems) * 100);
+
+                return { 
+                    scoreFraction: `${correctItems}/${totalItems}`, 
+                    scorePercentage: scorePercentage,
+                    isFullScore: isFullScore,
+                    actualScore: correctItems,
+                    qType: displayType
+                };
+            } 
+            
+            // ----------------------------------------------------
+            // 3. Penilaian PG MCMA (Parsial - Correct minus Wrong)
+            // ----------------------------------------------------
+            if (processingType === 'PGMCMA') {
+                // Hapus duplikat untuk PGMCMA
+                userAnswers = Array.from(new Set(userAnswers)); 
+                
+                const keySet = new Set(correctKey);
+                
+                let correctPicks = 0;
+                let wrongPicks = 0;
+                
+                userAnswers.forEach(choice => {
+                    if (keySet.has(choice)) {
+                        correctPicks++; 
+                    } else {
+                        wrongPicks++; 
+                    }
+                });
+
+                let actualScore = correctPicks - wrongPicks;
+                actualScore = Math.max(0, Math.min(actualScore, totalItems));
+                
+                const isFullScore = actualScore === totalItems;
+                const scorePercentage = Math.round((actualScore / totalItems) * 100);
+
+                return { 
+                    scoreFraction: `${actualScore}/${totalItems}`, 
+                    scorePercentage: scorePercentage,
+                    isFullScore: isFullScore,
+                    actualScore: actualScore,
+                    qType: displayType
+                };
+            }
+
+            // Fallback (seharusnya tidak tercapai)
+            return { scoreFraction: '0/0', scorePercentage: 0, isFullScore: false, actualScore: 0, qType: 'TIDAK DIKENAL' };
+        }
+
+        // --- 3. FUNGSI PENGIRIMAN SKOR OTOMATIS ---
+        async function submitFinalScore(score) {
+            console.log(`Mengirim skor akhir ${score}% ke GAS...`);
+            
+            const submissionData = {
+                action: 'finalScore',
+                nisn: nisn,
+                nama: nama, 
+                mapel: mapelCode,
+                score: score, 
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(submissionData)
+                });
+                
+                console.log('Permintaan pengiriman skor akhir berhasil dikirim.');
+            } catch (error) {
+                console.error('Gagal mengirim skor akhir ke GAS:', error);
+            }
+        }
+
+        // --- 4. FUNGSI RENDERING DAN KELUAR ---
+        
+        function renderTable(answers, keys, questions) { 
+            const tableBody = document.getElementById('results-body');
+            let html = '';
+            
+            const allIds = new Set([...Object.keys(keys), ...Object.keys(answers)]);
+            const questionIds = Array.from(allIds).sort((a, b) => {
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                return isNaN(numA) || isNaN(numB) ? a.localeCompare(b) : numA - numB;
+            });
+            
+            let currentNo = 1;
+            let totalCorrectScore = 0; 
+            let totalPossibleScore = 0; 
+
+            questionIds.forEach(id => {
+                const userAnsRaw = answers[id];
+                const keyRaw = keys[id];
+                
+                const questionMetadata = questions[id] || {}; 
+                const questionType = questionMetadata.TIPE || 'PG SEDERHANA';
+
+                const scoreData = calculateScore(userAnsRaw, keyRaw, questionType);
+                
+                const correctKey = parseKey(keyRaw);
+                const userAnswer = parseAnswer(userAnsRaw);
+                
+                // Format tampilan PG Kategori (jawaban berurutan)
+                const isPgKategori = scoreData.qType === 'PG KATEGORI';
+                const kunciTampil = isPgKategori ? `[${correctKey.join(', ')}]` : correctKey.join(', ') || '-';
+                const jawabanTampil = isPgKategori ? `[${userAnswer.join(', ')}]` : userAnswer.join(', ') || '-';
+                
+                let rowClass = 'incorrect-answer';
+                if (scoreData.isFullScore) {
+                    rowClass = 'correct-answer';
+                } else if (scoreData.actualScore > 0) {
+                    rowClass = 'partial-answer'; 
+                }
+
+                totalCorrectScore += scoreData.actualScore; 
+                const totalItems = correctKey.length > 1 ? correctKey.length : 1; 
+                totalPossibleScore += totalItems; 
+
+                html += `
+                    <tr>
+                        <td>${currentNo++}</td>
+                        <td class="${rowClass}">${jawabanTampil}</td>
+                        <td>${kunciTampil}</td>
+                        <td class="${rowClass}">
+                            ${scoreData.scoreFraction} (${scoreData.scorePercentage}%)
+                            <br>
+                            <small>Tipe: ${scoreData.qType}</small>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+            
+            // --- HITUNG DAN KIRIM SKOR AKHIR ---
+            const finalScorePercentage = totalPossibleScore > 0 ? (totalCorrectScore / totalPossibleScore) * 100 : 0;
+            const finalScoreDisplay = document.getElementById('final-score');
+            
+            finalScoreDisplay.innerHTML = `
+                ${totalCorrectScore.toFixed(0)} / ${totalPossibleScore.toFixed(0)} Item Benar
+                <br>
+                (${finalScorePercentage.toFixed(2)}%)
+            `;
+            
+            submitFinalScore(finalScorePercentage.toFixed(2)); 
+        }
+
+        /**
+         * Fungsi utama yang dipanggil saat halaman dimuat (onload).
+         */
+        function loadResults() {
+            if (!nisn || !mapelCode || !nama) {
+                alert("Data peserta tidak lengkap. Silakan login kembali.");
+                exitTest();
+                return;
+            }
+
+            document.getElementById('nisn-info').textContent = nisn;
+            document.getElementById('name-info').textContent = nama;
+            document.getElementById('mapel-info').textContent = mapelName;
+
+            const answers = JSON.parse(localStorage.getItem(LS_KEY_ANSWERS) || '{}');
+            const keys = JSON.parse(localStorage.getItem(LS_KEY_KEYS) || '{}');
+            const questions = JSON.parse(localStorage.getItem(LS_KEY_QUESTIONS) || '{}'); 
+
+            renderTable(answers, keys, questions);
+        }
+
+        function exitTest() {
+            localStorage.clear(); 
+            window.location.href = 'index.html';
+        }
+
+        // --- 5. INISIALISASI PADA WINDOW LOAD ---
+        window.onload = loadResults; 
+    </script>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SMK Negeri 2 Pati | Hasil Try Out</h1>
+    </div>
+
+    <div class="container">
+        <h2>Nilai Try Out</h2>
+        
+        <div class="user-info">
+            <p><strong>NISN:</strong> <span id="nisn-info">...</span></p>
+            <p><strong>Nama:</strong> <span id="name-info">...</span></p>
+            <p><strong>Mata Pelajaran:</strong> <span id="mapel-info">...</span></p>
+        </div>
+
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No.</th>
+                    <th style="width: 35%;">Jawaban Anda</th>
+                    <th style="width: 35%;">Kunci Jawaban</th>
+                    <th style="width: 25%;">Skor (Benar/Total)</th> 
+                </tr>
+            </thead>
+            <tbody id="results-body">
+                </tbody>
+            <tfoot>
+                <tr class="score-row">
+                    <td colspan="3" style="text-align: right;">Total Item Benar / Skor Akhir:</td>
+                    <td class="score-display">
+                        <span id="final-score">Memuat...</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="actions">
+            <button class="btn-exit" onclick="exitTest()">KELUAR</button>
+        </div>
+    </div>
+
+</body>
+</html>

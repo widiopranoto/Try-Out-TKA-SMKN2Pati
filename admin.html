@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMK N 2 Pati - Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .header { background-color: #4CAF50; color: white; padding: 15px; text-align: center; }
+        .container { max-width: 800px; margin: 30px auto; padding: 25px; background-color: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        h2 { color: #388E3C; border-bottom: 2px solid #E0F2F1; padding-bottom: 10px; }
+        .mapel-card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 6px; background-color: #f9f9f9; }
+        .mapel-card h3 { margin-top: 0; color: #1B5E20; }
+        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 10px; }
+        button { padding: 8px 15px; background-color: #00796B; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #004D40; }
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 12px; font-weight: bold; font-size: 0.9em; margin-left: 10px; }
+        .active-status { background-color: #E8F5E9; color: #2E7D32; }
+        .message { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #DCE775; color: #333; }
+        .error { background-color: #FFCDD2; color: #C62828; }
+        /* Style untuk menyembunyikan konten sebelum login */
+        #main-content { display: none; } 
+        .auth-message { text-align: center; padding: 50px; color: #C62828; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="main-content">
+    <div class="header">
+        <h1>SMK Negeri 2 Pati - Admin Dashboard</h1>
+        <h2>Pengaturan Paket Soal Ujian</h2>
+    </div>
+
+    <div class="container">
+        <h2>Daftar Mata Pelajaran & Paket Soal</h2>
+        <div id="loading">Memuat konfigurasi paket soal...</div>
+
+        <div id="mapel-list">
+            </div>
+
+        <div id="global-message" class="message" style="display:none;"></div>
+
+        <p style="margin-top: 25px; border-top: 1px dashed #ccc; padding-top: 15px;">
+            ⚠️ **PERHATIAN:** Perubahan di sini akan segera memengaruhi ujian peserta yang sedang mencoba masuk.
+        </p>
+    </div>
+</div>
+
+<div id="auth-error" class="auth-message" style="display:none;">
+    Akses ditolak. Username atau Password salah.
+</div>
+
+<script>
+    // --- KONFIGURASI OTENTIKASI ---
+    const CORRECT_USERNAME = 'admin';
+    const CORRECT_PASSWORD = 'SMK2pati!';
+    const AUTH_KEY = 'admin_authenticated';
+    
+    // --- KONFIGURASI GAS & MAPEL ---
+    // GANTI URL INI DENGAN URL WEB APP GAS ANDA
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwbj0boWqol7wuhSqqztkrRBp9a8wowkza8mVnzCKmNxqXw_eNu1qbiD_OOXNps-LjgKg/exec'; 
+
+    const MAPEL_CONFIG = {
+        'bindo': { name: 'Bahasa Indonesia', packages: ['bindo_1', 'bindo_2'] },
+        'mat': { name: 'Matematika', packages: ['mat_1', 'mat_2'] },
+        'bing': { name: 'Bahasa Inggris', packages: ['bing_1', 'bing_2'] },
+        'pkku': { name: 'PKKU', packages: ['pkku_1'] },
+        'jepang': { name: 'Bahasa Jepang', packages: ['jepang_1'] }
+    };
+
+    // --- FUNGSI OTENTIKASI ---
+
+    function authenticate() {
+        // Cek apakah sudah terotentikasi di Local Storage
+        if (localStorage.getItem(AUTH_KEY) === 'true') {
+            document.getElementById('main-content').style.display = 'block';
+            fetchActivePackages();
+            return;
+        }
+
+        // Tampilkan prompt login
+        let username = prompt("Masukkan Username Admin:");
+        let password = prompt("Masukkan Password Admin:");
+
+        if (username === CORRECT_USERNAME && password === CORRECT_PASSWORD) {
+            // Berhasil login
+            localStorage.setItem(AUTH_KEY, 'true');
+            document.getElementById('main-content').style.display = 'block';
+            fetchActivePackages();
+        } else {
+            // Gagal login
+            localStorage.removeItem(AUTH_KEY);
+            document.getElementById('auth-error').style.display = 'block';
+            // Opsional: Redirect ke halaman lain
+            // window.location.href = 'index.html';
+        }
+    }
+
+    // --- FUNGSI DASHBOARD (Tidak ada perubahan signifikan, hanya dipanggil setelah otentikasi) ---
+
+    const mapelList = document.getElementById('mapel-list');
+    const loading = document.getElementById('loading');
+    const globalMessage = document.getElementById('global-message');
+
+    function showMessage(type, text) {
+        globalMessage.className = `message ${type}`;
+        globalMessage.textContent = text;
+        globalMessage.style.display = 'block';
+        setTimeout(() => globalMessage.style.display = 'none', 5000);
+    }
+
+    async function fetchActivePackages() {
+        loading.style.display = 'block';
+        try {
+            const url = `${GAS_API_URL}?action=get_active_packages`;
+            const response = await fetch(url, { method: 'GET', mode: 'cors' });
+            const result = await response.json();
+
+            loading.style.display = 'none';
+
+            if (result.status === 'Success') {
+                renderDashboard(result.data);
+            } else {
+                showMessage('error', `Gagal memuat konfigurasi dari GAS: ${result.message}`);
+                renderDashboard({});
+            }
+        } catch (error) {
+            loading.style.display = 'none';
+            showMessage('error', `Koneksi gagal: ${error.message}`);
+            renderDashboard({});
+        }
+    }
+
+    function renderDashboard(activePackages) {
+        mapelList.innerHTML = '';
+
+        for (const code in MAPEL_CONFIG) {
+            const config = MAPEL_CONFIG[code];
+            const currentPackage = activePackages[code] || `${code}_1`; // Default paket 1
+
+            const card = document.createElement('div');
+            card.className = 'mapel-card';
+            card.innerHTML = `
+                <h3>${config.name.toUpperCase()}</h3>
+                <label for="${code}-select">Pilih Paket:</label>
+                <select id="${code}-select">
+                    ${config.packages.map(pkg => `
+                        <option value="${pkg}" ${pkg === currentPackage ? 'selected' : ''}>
+                            ${pkg.toUpperCase()}
+                        </option>
+                    `).join('')}
+                </select>
+                <button onclick="updatePackage('${code}')">Set Aktif</button>
+                <span class="status-badge active-status" id="${code}-status">Aktif: ${currentPackage.toUpperCase()}</span>
+            `;
+            mapelList.appendChild(card);
+        }
+    }
+
+    async function updatePackage(mapelCode) {
+        const selectElement = document.getElementById(`${mapelCode}-select`);
+        const newPackage = selectElement.value;
+        const statusBadge = document.getElementById(`${mapelCode}-status`);
+
+        statusBadge.textContent = 'Menyimpan...';
+
+        try {
+            const response = await fetch(GAS_API_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'set_active_package',
+                    mapel: mapelCode,
+                    package: newPackage
+                })
+            });
+            const result = await response.json();
+
+            if (result.status === 'Success') {
+                statusBadge.textContent = `Aktif: ${newPackage.toUpperCase()}`;
+                showMessage('success', result.message);
+            } else {
+                statusBadge.textContent = `Gagal: ${newPackage.toUpperCase()}`;
+                showMessage('error', `Gagal menyimpan: ${result.message}`);
+            }
+        } catch (error) {
+            statusBadge.textContent = `Error: ${newPackage.toUpperCase()}`;
+            showMessage('error', `Koneksi gagal saat menyimpan: ${error.message}`);
+        }
+    }
+
+    // --- INISIALISASI ---
+    authenticate();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMK N 2 Pati - Login Peserta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa; /* Warna latar belakang yang lebih menarik */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .header {
+            background-color: #004d40; /* Warna hijau tua khas */
+            color: white;
+            padding: 15px 0;
+            margin: -30px -30px 20px -30px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .header h2 {
+            margin: 5px 0 0;
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+        label {
+            display: block;
+            text-align: left;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00796b; /* Warna tombol yang sesuai */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #004d40;
+        }
+        .warning {
+            color: red;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="header">
+        <h1>SMK Negeri 2 Pati</h1>
+        <h2>Try Out TKA</h2>
+    </div>
+    
+    <form id="loginForm">
+        
+        <label for="nisn">Masukkan NISN:</label>
+        <input type="text" id="nisn" placeholder="Contoh: 1234567890" required pattern="\d{10}" maxlength="10">
+
+        <label for="mapel">Pilih Mata Pelajaran:</label>
+        <select id="mapel" required>
+            <option value="" disabled selected>-- Pilih Mata Pelajaran --</option>
+            </select>
+        
+        <div id="warningMessage" class="warning" style="display:none;">
+            Harap isi NISN (10 digit angka) dan pilih Mata Pelajaran.
+        </div>
+        
+        <button type="submit">Lanjut Verifikasi Token</button>
+    </form>
+    
+</div>
+
+<script>
+    const mapelSelect = document.getElementById('mapel');
+    const warningMessage = document.getElementById('warningMessage');
+    const loginForm = document.getElementById('loginForm');
+
+    // KONFIGURASI MATA PELAJARAN (Value harus sesuai dengan key di GAS dan admin.html)
+    const mapelOptions = {
+        'Wajib': [
+            { value: 'bindo', text: 'Bahasa Indonesia' },
+            { value: 'mat', text: 'Matematika' },
+            { value: 'bing', text: 'Bahasa Inggris' }
+        ],
+        'Pilihan': [
+            { value: 'pkku', text: 'PKKU' },
+            { value: 'jepang', text: 'Bahasa Jepang' }
+        ]
+    };
+
+    function populateMapelOptions() {
+        // Hapus opsi default yang "disabled selected"
+        mapelSelect.innerHTML = '<option value="" disabled selected>-- Pilih Mata Pelajaran --</option>';
+
+        for (const group in mapelOptions) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group;
+            
+            mapelOptions[group].forEach(mapel => {
+                const option = document.createElement('option');
+                option.value = mapel.value; 
+                option.textContent = mapel.text;
+                optgroup.appendChild(option);
+            });
+            mapelSelect.appendChild(optgroup);
+        }
+    }
+
+    loginForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const nisnInput = document.getElementById('nisn').value.trim();
+        const mapelValue = mapelSelect.value;
+        
+        // Validasi Sederhana
+        if (nisnInput.length !== 10 || isNaN(nisnInput) || mapelValue === "") {
+            warningMessage.style.display = 'block';
+            return;
+        }
+        
+        warningMessage.style.display = 'none';
+
+        // Simpan data ke Local Storage
+        localStorage.setItem('nisn', nisnInput);
+        localStorage.setItem('mapel', mapelValue);
+        
+        // Redirect ke halaman verifikasi data/token
+        window.location.href = 'data.html';
+    });
+
+    // Jalankan fungsi pengisian opsi saat halaman dimuat
+    populateMapelOptions();
+    
+    // Clear data waktu sebelumnya jika ada (pencegahan)
+    localStorage.removeItem('waktu'); 
+
+</script>
+
+</body>
+</html>

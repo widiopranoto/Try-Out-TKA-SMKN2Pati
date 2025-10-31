@@ -1,0 +1,296 @@
+// ID Spreadsheet Anda
+const SPREADSHEET_ID = '1smxnx_vuwMN6Lv_NrIgozqLeQ5Oln2oGuKkOhvtZTOw'; // ID Spreadsheet Soal (Soal dan Kunci)
+const SPREADSHEET_DATA_ID = '1ZjIIa1LPGPTPr_h4Ujp5YArt3K67a0yDUd-574Yol58'; // ID Spreadsheet Data Peserta (Penyimpanan Jawaban dan Skor)
+const USER_PROPERTIES = PropertiesService.getUserProperties();
+// GANTI DENGAN URL GAS ANDA YANG SESUNGGUHNYA
+//const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbybh65YPwZlkWMn8qRyZzTvrFn6Yyyf_3NH9c-HahkwCrzWXgA0hyRKrij1KIueXwkMzg/exec'; 
+// --- FUNGSI UTAMA HANDLER GET & POST ---
+
+function doGet(e) {
+  const nisn = e.parameter.nisn;
+  const mapel = e.parameter.mapel; 
+  const action = e.parameter.action; 
+  
+  if (action === 'get_active_packages') {
+    return getActivePackages();
+  }
+
+  if (nisn) {
+    return checkNisn(nisn);
+  }
+  
+  if (mapel) {
+    if (action === 'get_final_score') {
+      return getFinalScore(nisn, mapel);
+    }
+    return loadQuestions(mapel);
+  }
+  
+  return ContentService.createTextOutput(
+    JSON.stringify({ status: "Error", message: "Akses tidak valid." })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    if (action === 'set_active_package') {
+      return setActivePackage(data.mapel, data.package);
+    }
+    
+    if (action === 'save_results' || action === 'periodic_save') {
+        if (!data.participantId || !data.mapel) {
+            throw new Error("Data payload hasil ujian tidak lengkap.");
+        }
+        return savePeriodicResults(data);
+    }
+    
+    throw new Error("Aksi tidak dikenal atau data tidak valid.");
+
+  } catch(error) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ status: "Error", message: error.message })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// --- FUNGSI UTILITY DATA & SOAL ---
+
+function checkNisn(nisn) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_DATA_ID).getSheetByName("DATA");
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][2].toString().trim() === nisn.toString().trim()) {
+      const result = {
+        found: true,
+        name: data[i][3], 
+        tgl_lahir: Utilities.formatDate(new Date(data[i][4]), "GMT", "yyyy-MM-dd"), 
+        jk: data[i][5] 
+      };
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ found: false })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Mengambil soal, konteks, dan kunci jawaban (kolom R) dari Sheet soal.
+ */
+function loadQuestions(mapel) {
+  const activePackage = USER_PROPERTIES.getProperty(mapel);
+  let sheetName = activePackage || `${mapel}_1`;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  
+  const sheetSoal = ss.getSheetByName(sheetName); 
+  if (!sheetSoal) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ status: "Error", message: `Sheet soal aktif '${sheetName}' tidak ditemukan.` })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Mengambil data dari A:R (index 0 hingga 17)
+  const dataSoal = sheetSoal.getRange(1, 1, sheetSoal.getLastRow(), 18).getValues();
+  const header = dataSoal.shift();
+  const questions = [];
+  const answerKeys = {}; 
+
+  for (let i = 0; i < dataSoal.length; i++) {
+    const row = dataSoal[i];
+    if (!row[0]) continue; 
+    
+    // --- Mapping Data (berdasarkan index kolom) ---
+    const questionId = row[0];
+    const type = row[2] ? row[2].toString().toUpperCase().trim() : 'PGSEDERHANA'; // Index 2
+    const text = row[6]; // Index 6
+    const soalImageUrl = row[7]; // Index 7
+    const rawKey = row[17] ? row[17].toString().trim() : ''; // Index 17 (Kolom R: JAWABAN)
+
+    // --- PERBAIKAN: Memproses Kunci Jawaban agar berupa Array yang siap digunakan di HTML ---
+    if (type === 'PGKATEGORI' || type === 'PGMCMA') {
+        // Untuk kategori dan MCMA, kunci adalah array dari string yang dipisahkan koma
+        answerKeys[questionId] = rawKey.split(',').map(k => k.trim().toUpperCase()).filter(k => k);
+    } else {
+        // Untuk PG Sederhana, kunci adalah array 1 elemen
+        answerKeys[questionId] = [rawKey.toUpperCase()]; 
+    }
+    // --- AKHIR PERBAIKAN KUNCI JAWABAN ---
+
+    // Data Bacaan (Index 3, 4, 5)
+    const reading = {
+        judul: row[3] || null,        
+        teks: row[4] || null,         
+        gambar: row[5] || null        
+    };
+    
+    // Data Pernyataan (Index 8, 9, 10, 11)
+    const statements = [row[8], row[9], row[10], row[11]]
+                       .filter(s => s && s.toString().trim() !== "");
+
+    // Data Opsi/Kategori (Index 12, 13, 14, 15, 16)
+    const rawOptions = [];
+    for (let j = 12; j <= 16; j++) { 
+        if (row[j]) { 
+            const prefix = header[j].replace('Opsi ', '') + '.';
+            const isPGKategori = (type === 'PGKATEGORI');
+            
+            rawOptions.push( isPGKategori ? row[j] : `${prefix} ${row[j]}` );
+        }
+    }
+    
+    let questionData = {
+        id: questionId,
+        text: text,
+        image: soalImageUrl || "",
+        reading: reading,
+        options: rawOptions,
+        type: null,
+        categories: null, 
+        statements: null 
+    };
+    
+    if (type === 'PGSEDERHANA') {
+        questionData.type = 'radio'; 
+        questionData.options = rawOptions;
+    } else if (type === 'PGMCMA') {
+        questionData.type = 'checkbox'; 
+        questionData.options = rawOptions;
+    } else if (type === 'PGKATEGORI') {
+        questionData.type = 'pgkategori'; 
+        questionData.categories = rawOptions; 
+        questionData.statements = statements; 
+    } else {
+        questionData.type = 'radio';
+        questionData.options = rawOptions;
+    }
+
+    questions.push(questionData);
+  }
+  
+  return ContentService.createTextOutput(
+    JSON.stringify({ 
+        status: "Success", 
+        data: questions, 
+        answerKeys: answerKeys, 
+        activeSheet: sheetName 
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+/**
+ * Menyimpan data jawaban peserta dan skor ke Sheet Data Peserta berdasarkan Mapel.
+ */
+function savePeriodicResults(data) {
+    const mapel = data.mapel.toLowerCase();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_DATA_ID);
+    const sheet = ss.getSheetByName(mapel); 
+
+    if (!sheet) {
+        throw new Error(`Sheet tujuan '${mapel}' di Spreadsheet Data tidak ditemukan.`);
+    }
+
+    const allData = sheet.getDataRange().getValues();
+    const headers = allData.length > 0 ? allData[0] : [];
+    
+    const nisnCol = headers.indexOf('NISN') + 1; 
+    const scoreCol = headers.indexOf('SCORE') + 1; 
+    const firstAnswerCol = headers.indexOf('NAMA') + 2; // Jawaban dimulai setelah NAMA
+    const lastColIndex = headers.length; 
+
+    // Cari baris peserta berdasarkan NISN (Kolom A / index 0)
+    let rowToUpdate = -1;
+    for (let i = 1; i < allData.length; i++) {
+        if (allData[i][0].toString().trim() === data.participantId.toString().trim()) {
+            rowToUpdate = i + 1; 
+            break;
+        }
+    }
+
+    // Urutkan jawaban berdasarkan ID Soal untuk memastikan urutan yang benar
+    const sortedAnswers = data.answers.sort((a, b) => a.id - b.id);
+    
+    // Siapkan data baris baru
+    const rowData = [
+        data.participantId, 
+        data.name || '',
+        // Konversi objek/array jawaban menjadi string JSON untuk penyimpanan di Sheet
+        ...sortedAnswers.map(a => JSON.stringify(a.answer)),
+        data.score,
+        data.timeSpent || 0
+    ];
+    
+    // Jika baris ditemukan, update data
+    if (rowToUpdate !== -1) {
+        // Hanya update kolom yang diperlukan: NISN, NAMA, Jawaban, SCORE, WAKTU
+        // Asumsi data array rowData sudah terurut sesuai kolom di sheet
+        const rangeLength = rowData.length; 
+        sheet.getRange(rowToUpdate, 1, 1, rangeLength).setValues([rowData]);
+
+    } else {
+        // Jika baris tidak ditemukan (pertama kali), append row baru
+        sheet.appendRow(rowData);
+    }
+
+    return ContentService.createTextOutput(
+        JSON.stringify({ status: "Success", message: `Data ujian ${mapel} berhasil disimpan/diperbarui.` })
+    ).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+/**
+ * Mengambil skor akhir peserta dari Google Sheet Data Peserta.
+ */
+function getFinalScore(nisn, mapel) {
+    const sheetName = mapel.toLowerCase();
+    const ss = SpreadsheetApp.openById(SPREADSHEET_DATA_ID);
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+        return ContentService.createTextOutput(
+            JSON.stringify({ status: "Error", score: null, message: `Sheet ${sheetName} tidak ditemukan.` })
+        ).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const allData = sheet.getDataRange().getValues();
+    const headers = allData.length > 0 ? allData[0] : [];
+    
+    const nisnColIndex = headers.indexOf('NISN');
+    const scoreColIndex = headers.indexOf('SCORE');
+
+    if (nisnColIndex === -1 || scoreColIndex === -1) {
+         return ContentService.createTextOutput(
+            JSON.stringify({ status: "Error", score: null, message: `Kolom NISN atau SCORE tidak ditemukan di sheet ${sheetName}.` })
+        ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Cari baris peserta berdasarkan NISN (dimulai dari baris kedua)
+    for (let i = 1; i < allData.length; i++) {
+        if (allData[i][nisnColIndex].toString().trim() === nisn.toString().trim()) {
+            const finalScore = allData[i][scoreColIndex];
+            return ContentService.createTextOutput(
+                JSON.stringify({ status: "Success", score: finalScore })
+            ).setMimeType(ContentService.MimeType.JSON);
+        }
+    }
+
+    return ContentService.createTextOutput(
+        JSON.stringify({ status: "NotFound", score: 0, message: "Skor tidak ditemukan untuk NISN ini." })
+    ).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- FUNGSI ADMIN (PROPERTIES SERVICE) ---
+function getActivePackages() {
+  const properties = USER_PROPERTIES.getProperties();
+  return ContentService.createTextOutput(
+    JSON.stringify({ status: "Success", data: properties })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function setActivePackage(mapel, package) {
+  USER_PROPERTIES.setProperty(mapel, package);
+  return ContentService.createTextOutput(
+    JSON.stringify({ status: "Success", message: `Paket aktif untuk ${mapel} diatur ke ${package}` })
+  ).setMimeType(ContentService.MimeType.JSON);
+}

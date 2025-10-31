@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konfirmasi Tes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+        .card h1 {
+            color: #004d40;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .card p {
+            color: #555;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex-grow: 1;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-finish {
+            background-color: #d32f2f;
+            color: white;
+        }
+        .btn-finish:hover {
+            background-color: #b71c1c;
+        }
+        .btn-back {
+            background-color: #ccc;
+            color: #333;
+        }
+        .btn-back:hover {
+            background-color: #bbb;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Konfirmasi Tes</h1>
+        <p>Terima kasih telah berpartisipasi dalam tes ini. Silahkan tekan tombol **SELESAI TES** untuk mengakhiri tes dan melihat hasil. Atau tekan tombol **KEMBALI** untuk kembali ke halaman tes.</p>
+        <div class="actions">
+            <a href="score.html" class="btn btn-finish">SELESAI TES</a>
+            <button class="btn btn-back" onclick="window.history.back()">KEMBALI</button>
+        </div>
+    </div>
+</body>
+</html>

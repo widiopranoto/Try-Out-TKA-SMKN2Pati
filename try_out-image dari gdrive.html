@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">SMK N 2 Pati - Ujian</title>
+    <style>
+        /* CSS Styling - Dibiarkan Sama */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; display: flex; flex-direction: column; height: 100vh; }
+        .header { background-color: #004d40; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header h1 { margin: 0; font-size: 1.5em; }
+        .main-container { display: flex; flex-grow: 1; padding: 20px; gap: 20px; overflow: hidden; }
+        #left-panel { flex: 2; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); overflow-y: auto; height: 100%; box-sizing: border-box; }
+        #right-panel-wrapper { flex: 3; display: flex; gap: 20px; overflow: hidden; height: 100%; }
+        #right-panel-content { flex: 3; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); overflow-y: auto; height: 100%; box-sizing: border-box; }
+        .sidebar { flex: 1; background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); height: fit-content; align-self: flex-start; position: sticky; top: 0; }
+        .timer-box { background-color: #e0f2f1; padding: 10px; text-align: center; margin-bottom: 15px; border-radius: 4px; }
+        .question-nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
+        .nav-button { padding: 8px; text-align: center; border: 1px solid #ccc; background-color: #f9f9f9; cursor: pointer; border-radius: 4px; }
+        .nav-button.active { background-color: #004d40; color: white; font-weight: bold; }
+        .nav-button.answered { background-color: #a5d6a7; }
+        .nav-button.doubt { background-color: #fff176; }
+        .question-image { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #eee; padding: 5px; display: block; }
+        
+        .options label { display: block; padding: 10px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+        .options label:hover { background-color: #f0f0f0; }
+        .options label img { max-width: 100%; height: auto; display: block; margin: 5px 0 0 0; padding: 0; } 
+        
+        .navigation-footer { display: flex; justify-content: space-between; padding-top: 20px; border-top: 1px solid #eee; }
+        .ragu-ragu-btn { background-color: #ff9800; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        .finish-btn { background-color: #d32f2f; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+        .reading-title { font-size: 1.5em; color: #1B5E20; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #E8F5E9; }
+        .reading-content { margin-top: 10px; line-height: 1.6; }
+
+        .pgkategori-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pgkategori-table th, .pgkategori-table td { border: 1px solid #ccc; padding: 12px 10px; text-align: center; }
+        .pgkategori-table th { background-color: #f0f0f0; font-weight: bold; color: #333; }
+        .pgkategori-table td:first-child { text-align: left; font-weight: 500; background-color: #f9f9f9; width: 40%; }
+        .pgkategori-table th:first-child { text-align: center; }
+        .pgkategori-table input[type="radio"] { cursor: pointer; transform: scale(1.2); }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/core-js/3.37.1/minified.js"></script>
+    <script>
+        MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="mainHeader">SMK Negeri 2 Pati | Try Out TKA</h1>
+    <div id="userInfo"></div>
+</div>
+
+<div class="main-container">
+    
+    <div id="left-panel">
+        <div id="reading-area">
+            <p style="text-align: center; padding-top: 50px; color: #999;">
+                Panel ini akan menampilkan teks atau gambar pendukung yang relevan.
+            </p>
+        </div>
+    </div>
+
+    <div id="right-panel-wrapper">
+        <div id="right-panel-content">
+            <div id="loading-message" style="text-align: center; padding: 50px;">
+                Memuat data soal...
+            </div>
+            <div id="question-area" style="display:none;"></div>
+            <div class="navigation-footer" id="navigation-footer" style="display:none;">
+                <button id="prev-btn" style="background-color: #4CAF50; color: white; border: none; padding: 10px 15px; border-radius: 4px;">Soal Sebelumnya</button>
+                <button id="doubt-btn" class="ragu-ragu-btn">Ragu-Ragu</button>
+                <button id="next-btn" style="background-color: #4CAF50; color: white; border: none; padding: 10px 15px; border-radius: 4px;">Soal Berikutnya</button>
+                <button id="finish-btn" class="finish-btn" style="display:none;">Selesai Tes</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="timer-box">
+                <h4>Sisa Waktu Pengerjaan</h4>
+                <div id="timer" style="font-size: 2em; font-weight: bold; color: #d32f2f;">00:00:00</div>
+                <small id="syncStatus" style="color: #666;">Sinkronisasi: Belum pernah</small>
+            </div>
+            <h4>Daftar Soal</h4>
+            <div class="question-nav" id="question-nav"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURASI DAN INISIALISASI VARIABEL ---
+    // URL ini harus diarahkan ke URL DEPLOYMENT GOOGLE APPS SCRIPT Anda
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwHf1CrkZixqrLNqmBNxlb1c6GhWI3M831ewrR3BMWagTV1B7D2n1qLNfTZV1t1--A_LQ/exec';
+    const mapelCode = localStorage.getItem('mapel');
+    const nisn = localStorage.getItem('nisn');
+    const nama = localStorage.getItem('nama');
+    const waktuMenit = localStorage.getItem('waktu');
+
+    const LS_KEY_TIME_REMAINING = `${mapelCode}_time_remaining`;
+    const LS_KEY_ANSWERS = `${mapelCode}_jawaban`;
+    const LS_KEY_KEYS = `${mapelCode}_kunci`;
+    
+    // --- KONSTANTA SINKRONISASI ---
+    const SYNC_INTERVAL_MS = 30000; // Sinkronisasi setiap 30 detik
+    // --- AKHIR KONSTANTA SINKRONISASI ---
+
+    let timeRemaining = parseInt(waktuMenit) * 60;
+    let questions = [];
+    let answerKeys = {};
+    let currentQuestionIndex = 0;
+    let answerStatus = [];
+    let timerInterval, periodicInterval;
+    let initialTimeTotal = timeRemaining;
+
+    const mapelNames = {
+        'bindo': 'Bahasa Indonesia', 'mat': 'Matematika', 'bing': 'Bahasa Inggris',
+        'pkku': 'PKKU', 'jepang': 'Bahasa Jepang'
+    };
+    const mapelName = mapelNames[mapelCode] || 'Ujian TKA';
+
+    // --- ELEMEN DOM DITEMUKAN SETELAH BODY DIMUAT ---
+    const readingArea = document.getElementById('reading-area');
+    const questionArea = document.getElementById('question-area');
+    const loadingMessage = document.getElementById('loading-message');
+    const navigationFooter = document.getElementById('navigation-footer');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const doubtBtn = document.getElementById('doubt-btn');
+    const finishBtn = document.getElementById('finish-btn');
+    const questionNavContainer = document.getElementById('question-nav');
+    const timerDisplay = document.getElementById('timer');
+    const syncStatus = document.getElementById('syncStatus'); // Element baru
+
+    function setInitialDisplay() {
+        if (document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = `SMK N 2 Pati - ${mapelName}`;
+        if (document.getElementById('mainHeader')) document.getElementById('mainHeader').textContent = `SMK Negeri 2 Pati | Try Out TKA ${mapelName}`;
+        if (document.getElementById('userInfo')) document.getElementById('userInfo').textContent = `Peserta: ${nama} (${nisn})`;
+    }
+
+    // --- FUNGSI SINKRONISASI JAWABAN (BARU) ---
+    async function saveAnswersToSheet() {
+        if (questions.length === 0) return;
+
+        const currentAnswers = JSON.parse(localStorage.getItem(LS_KEY_ANSWERS) || "{}");
+        const submissionData = {
+            action: 'saveAnswers', 
+            nisn: nisn,
+            nama: nama,
+            mapel: mapelCode,
+            answers: currentAnswers,
+            timestamp: new Date().toISOString()
+        };
+
+        syncStatus.textContent = 'Sinkronisasi: Mengirim...';
+        syncStatus.style.color = '#FF9800';
+
+        try {
+            const response = await fetch(GAS_API_URL, {
+                method: 'POST',
+                mode: 'no-cors', 
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(submissionData)
+            });
+
+            syncStatus.textContent = `Sinkronisasi: Berhasil (${new Date().toLocaleTimeString()})`;
+            syncStatus.style.color = '#4CAF50';
+        } catch (error) {
+            console.error('Error saat sinkronisasi jawaban:', error);
+            syncStatus.textContent = `Sinkronisasi: Gagal! (${new Date().toLocaleTimeString()})`;
+            syncStatus.style.color = '#D32F2F';
+        }
+    }
+    // --- AKHIR FUNGSI SINKRONISASI ---
+
+    // --- FUNGSI UTILITY ---
+    
+    function indexToLetter(index) {
+        return String.fromCharCode(65 + index); 
+    }
+
+    function getOptionLetter(optionText) {
+        if (typeof optionText === 'string' && optionText.includes('.'))
+            return optionText.split('.')[0].trim().toUpperCase();
+        return optionText.trim().toUpperCase();
+    }
+
+    /* FUNGSI PGKATEGORI: savePgKategoriAnswer */
+    function savePgKategoriAnswer(qId, statementKey, selectedCategoryLetter) {
+        const index = questions.findIndex(q => String(q.id) === String(qId));
+        if (index === -1) return;
+        const q = questions[index];
+        // FIX: Pastikan q.answer adalah array sebelum manipulasi
+        if (!Array.isArray(q.answer)) q.answer = [];
+
+        const stmtIndex = parseInt(statementKey.replace('stmt_', ''), 10);
+        
+        const cat = selectedCategoryLetter; 
+        
+        if (q.answer.length <= stmtIndex) {
+            q.answer.length = q.statements.length;
+            q.answer.fill("", q.answer.length, q.statements.length);
+        }
+        
+        q.answer[stmtIndex] = cat;
+        q.answer = q.answer.map(v => v || ""); 
+
+        const hasAnswer = q.answer.some(v => v !== "");
+        if (answerStatus[index] !== 2) { 
+             answerStatus[index] = hasAnswer ? 1 : 0;
+        }
+
+        const saved = JSON.parse(localStorage.getItem(LS_KEY_ANSWERS) || "{}");
+        saved[q.id] = q.answer;
+        localStorage.setItem(LS_KEY_ANSWERS, JSON.stringify(saved));
+
+        updateNavButtons();
+    }
+
+    /* FUNGSI PGKATEGORI: renderPgKategori */
+    function renderPgKategori(q) {
+        // FIX: Gunakan Array.isArray()
+        if (!Array.isArray(q.answer)) q.answer = [];
+
+        let html = `<table class="pgkategori-table"><thead><tr><th>Pernyataan</th>`;
+        
+        const categoryValueLetters = q.categories.map((_, index) => indexToLetter(index));
+        
+        q.categories.forEach(cat => html += `<th>${cat}</th>`);
+        html += `</tr></thead><tbody>`;
+
+        q.statements.forEach((stmt, stmtIndex) => {
+            const statementKey = `stmt_${stmtIndex}`;
+            const currentAnswerLetter = q.answer[stmtIndex] || "";
+            html += `<tr><td style="text-align:left;">${stmt}</td>`;
+            
+            q.categories.forEach((catText, catIndex) => {
+                const categoryLetter = categoryValueLetters[catIndex]; 
+                const inputName = `pgkat_${q.id}_${stmtIndex}`;
+                const inputId = `${inputName}_${categoryLetter}`;
+                const isChecked = currentAnswerLetter === categoryLetter;
+                
+                html += `
+                    <td>
+                        <input type="radio"
+                            name="${inputName}"
+                            id="${inputId}"
+                            value="${categoryLetter}"  
+                            ${isChecked ? 'checked' : ''}
+                            onchange="savePgKategoriAnswer('${q.id}', '${statementKey}', this.value)">
+                    </td>`;
+            });
+            html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        return html;
+    }
+
+    function saveAnswer(qId, val, isCheckbox) {
+        const index = questions.findIndex(q => String(q.id) === String(qId));
+        const q = questions[index];
+        if (q.type === 'pgkategori') return;
+        
+        const letter = val.toUpperCase();
+        
+        if (isCheckbox) {
+            // FIX: Gunakan Array.isArray()
+            if (!Array.isArray(q.answer)) q.answer = [];
+            const exists = q.answer.includes(letter);
+            if (exists) q.answer = q.answer.filter(v => v !== letter);
+            else q.answer.push(letter);
+            q.answer.sort();
+        } else q.answer = letter;
+
+        // FIX: Gunakan Array.isArray()
+        const hasAnswer = Array.isArray(q.answer) ? q.answer.length > 0 : !!q.answer;
+        if (answerStatus[index] !== 2) { 
+             answerStatus[index] = hasAnswer ? 1 : 0;
+        }
+
+        const saved = JSON.parse(localStorage.getItem(LS_KEY_ANSWERS) || "{}");
+        saved[q.id] = q.answer;
+        localStorage.setItem(LS_KEY_ANSWERS, JSON.stringify(saved));
+        updateNavButtons();
+    }
+
+    function renderReadingPanel(reading) {
+        const r = reading || {}; 
+        
+        const hasContent = (r.judul && r.judul.trim() !== "") || 
+                           (r.teks && r.teks.trim() !== "") || 
+                           (r.gambar && r.gambar.trim() !== "");
+
+        let html = '';
+        
+        if (hasContent) {
+            if (r.judul && r.judul.trim() !== "") {
+                html += `<h3 class="reading-title">${r.judul}</h3>`;
+            } else {
+                html += `<h3 class="reading-title">Bacaan/Teks Pendukung</h3>`;
+            }
+
+            if (r.gambar && r.gambar.trim() !== "") {
+                if (r.gambar.startsWith('http')) {
+                    html += `<img src="${r.gambar}" alt="Gambar Bacaan" class="question-image">`;
+                } else {
+                    html += `<div class="reading-content">${r.gambar}</div>`;
+                }
+            }
+            
+            if (r.teks && r.teks.trim() !== "") {
+                html += `<div class="reading-content">${r.teks}</div>`;
+            }
+        } else {
+            html = `<p style="text-align: center; padding-top: 50px; color: #999;">
+                        Tidak ada teks atau gambar pendukung untuk soal ini.
+                    </p>`;
+        }
+
+        readingArea.innerHTML = html;
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise([readingArea]).catch((err) => console.error('MathJax Reading Error: ', err));
+        }
+    }
+
+
+    /* --- FUNGSI UTAMA LOAD & RENDER --- */
+    async function loadQuestions() {
+        if (!nisn || !mapelCode || !waktuMenit) {
+            alert("Data peserta, mata pelajaran, atau alokasi waktu tidak ditemukan. Anda akan dikembalikan ke halaman awal.");
+            window.location.href = 'index.html';
+        }
+        
+        setInitialDisplay(); 
+
+        const savedTime = localStorage.getItem(LS_KEY_TIME_REMAINING);
+        if (savedTime && parseInt(savedTime) > 0) timeRemaining = parseInt(savedTime);
+        initialTimeTotal = parseInt(waktuMenit) * 60;
+
+        try {
+            const url = `${GAS_API_URL}?mapel=${encodeURIComponent(mapelCode)}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Gagal memuat data dari GAS. Status: ${response.status}`);
+            const result = await response.json();
+            if (result.status === 'Error') throw new Error(result.message);
+
+            questions = result.data.map((q, i) => ({ ...q, index: i }));
+            answerKeys = result.answerKeys;
+            localStorage.setItem(LS_KEY_KEYS, JSON.stringify(answerKeys));
+
+            const storedAnswers = JSON.parse(localStorage.getItem(LS_KEY_ANSWERS) || "{}");
+            answerStatus = new Array(questions.length).fill(0);
+
+            questions.forEach((q, i) => {
+                // FIX: Gunakan Array.isArray()
+                if (q.type === 'pgkategori') q.answer = Array.isArray(q.answer) ? q.answer : [];
+                else if (q.type === 'checkbox') q.answer = Array.isArray(q.answer) ? q.answer : [];
+                else q.answer = q.answer || "";
+                
+                const stored = storedAnswers[q.id];
+                if (stored) q.answer = stored;
+
+                // FIX BARIS 364: Gunakan Array.isArray()
+                const hasAnswer = Array.isArray(q.answer) ? q.answer.some(v => v !== "") : !!q.answer;
+                answerStatus[i] = hasAnswer ? 1 : 0;
+            });
+
+            loadingMessage.style.display = 'none';
+            questionArea.style.display = 'block';
+            navigationFooter.style.display = 'flex';
+            renderNavButtons();
+            renderQuestion(0);
+            
+            // --- START TIMER & PERIODIC SYNC (TAMBAHAN) ---
+            timerInterval = setInterval(updateTimer, 1000);
+            periodicInterval = setInterval(saveAnswersToSheet, SYNC_INTERVAL_MS);
+            saveAnswersToSheet(); 
+            // --- AKHIR START TIMER & PERIODIC SYNC ---
+            
+        } catch (error) {
+            console.error('Error in loading questions:', error);
+            loadingMessage.innerHTML = `⚠️ **Error memuat data soal:** ${error.message}.`;
+        }
+    }
+
+    /* FUNGSI PERBAIKAN: renderQuestion */
+    function renderQuestion(index) {
+        if (index < 0 || index >= questions.length) return;
+        currentQuestionIndex = index;
+        const q = questions[index];
+
+        renderReadingPanel(q.reading); 
+
+        let html = `<h3>Soal No. ${index + 1}</h3>`;
+        
+        // Gambar Soal (di atas teks)
+        if (q.image && q.image.trim() !== "") {
+            if (q.image.startsWith('http')) {
+                html += `<img src="${q.image}" alt="Gambar Soal ${q.id}" class="question-image">`;
+            } else {
+                 html += `<p>${q.image}</p>`; 
+            }
+        }
+        
+        // Teks soal
+        html += `<p>${q.text}</p>`;
+
+        if (q.type === 'pgkategori') {
+            html += renderPgKategori(q);
+        } else {
+            html += `<div class="options">`;
+            const inputType = q.type === 'checkbox' ? 'checkbox' : 'radio';
+            
+            q.options.forEach((opt, i) => {
+                const letter = getOptionLetter(opt);
+                // FIX: Gunakan Array.isArray()
+                const isChecked = Array.isArray(q.answer) ? q.answer.includes(letter) : q.answer === letter;
+                
+                let displayContent = opt;
+                let textToCheck = opt;
+                
+                const prefixMatch = opt.match(/^([A-Z]|\d+)\.\s/i);
+                let prefix = '';
+
+                if (prefixMatch) {
+                    prefix = prefixMatch[0]; 
+                    textToCheck = opt.substring(prefix.length).trim();
+                } else {
+                    textToCheck = opt.trim();
+                }
+
+                if (textToCheck.startsWith('http://') || textToCheck.startsWith('https://')) {
+                    const imageTag = `<img src="${textToCheck}" alt="Opsi Gambar">`;
+                    displayContent = prefix + imageTag;
+                } else {
+                    displayContent = opt;
+                }
+
+                html += `
+                    <label>
+                        <input type="${inputType}" name="q${q.id}" value="${letter}" ${isChecked ? 'checked' : ''} onchange="saveAnswer(${q.id}, this.value, ${inputType === 'checkbox'})">
+                        ${displayContent}
+                    </label>`;
+            });
+            html += `</div>`;
+        }
+        questionArea.innerHTML = html;
+        
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise([questionArea]).catch((err) => console.error('MathJax Question Error: ', err));
+        }
+        
+        prevBtn.disabled = index === 0;
+        nextBtn.style.display = (index === questions.length - 1) ? 'none' : 'inline-block';
+        finishBtn.style.display = (index === questions.length - 1) ? 'inline-block' : 'none';
+        doubtBtn.textContent = answerStatus[index] === 2 ? 'Batalkan Ragu-Ragu' : 'Ragu-Ragu';
+
+        updateNavButtons();
+    }
+
+
+    /* --- FUNGSI NAVIGASI & TIMER --- */
+    function toggleDoubt() {
+        const index = currentQuestionIndex;
+        const q = questions[index];
+        // FIX: Gunakan Array.isArray()
+        let hasAnswer = Array.isArray(q.answer) ? q.answer.some(v => v !== "") : !!q.answer;
+
+        if (answerStatus[index] === 2) {
+            answerStatus[index] = hasAnswer ? 1 : 0;
+            doubtBtn.textContent = 'Ragu-Ragu';
+        } else {
+            answerStatus[index] = 2;
+            doubtBtn.textContent = 'Batalkan Ragu-Ragu';
+        }
+        updateNavButtons();
+    }
+
+    function renderNavButtons() {
+        questionNavContainer.innerHTML = questions.map((q, i) =>
+            `<div class="nav-button" id="nav-q-${q.id}" onclick="renderQuestion(${i})">${i + 1}</div>`
+        ).join('');
+        updateNavButtons();
+    }
+    
+    function updateNavButtons() {
+        questions.forEach((q, i) => {
+            const btn = document.getElementById(`nav-q-${q.id}`);
+            if (!btn) return;
+            
+            btn.classList.remove('active', 'answered', 'doubt');
+            
+            if (i === currentQuestionIndex) {
+                btn.classList.add('active');
+            } else if (answerStatus[i] === 2) {
+                btn.classList.add('doubt');
+            } else if (answerStatus[i] === 1) {
+                btn.classList.add('answered');
+            }
+        });
+    }
+
+    function updateTimer() {
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            clearInterval(periodicInterval); 
+            localStorage.removeItem(LS_KEY_TIME_REMAINING);
+            alert("Waktu ujian habis! Jawaban Anda akan dikirim.");
+            finishTest(true); 
+            return;
+        }
+        const h = String(Math.floor(timeRemaining / 3600)).padStart(2, '0');
+        const m = String(Math.floor((timeRemaining % 3600) / 60)).padStart(2, '0');
+        const s = String(timeRemaining % 60).padStart(2, '0');
+        timerDisplay.textContent = `${h}:${m}:${s}`;
+        timeRemaining--;
+        localStorage.setItem(LS_KEY_TIME_REMAINING, timeRemaining);
+    }
+
+    /* --- FUNGSI SELESAI TES --- */
+    async function finishTest(isTimeUp = false) {
+        if (!isTimeUp) {
+            const unanswered = questions.filter((q, index) => answerStatus[index] !== 1 && answerStatus[index] !== 2);
+            let confirmationMessage = "Anda yakin ingin mengakhiri tes?";
+            if (unanswered.length > 0) {
+                 confirmationMessage += `\n\nPERINGATAN: Masih ada ${unanswered.length} soal yang belum dijawab! Lanjutkan?`;
+            }
+
+            if (!confirm(confirmationMessage)) {
+                return;
+            }
+        }
+        
+        clearInterval(timerInterval);
+        clearInterval(periodicInterval); 
+
+        // LAKUKAN SINKRONISASI TERAKHIR SEBELUM REDIREKSI
+        await saveAnswersToSheet(); 
+        
+        localStorage.removeItem(LS_KEY_TIME_REMAINING); 
+
+        // Redireksi ke submit.html
+        window.location.href = 'submit.html'; 
+    }
+
+    // --- Event Listeners ---
+    prevBtn.addEventListener('click', () => renderQuestion(currentQuestionIndex - 1));
+    nextBtn.addEventListener('click', () => renderQuestion(currentQuestionIndex + 1));
+    doubtBtn.addEventListener('click', toggleDoubt);
+    finishBtn.addEventListener('click', () => finishTest(false));
+    
+    // --- Initialization ---
+    loadQuestions();
+</script>
+</body>
+</html>
